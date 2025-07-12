@@ -8,6 +8,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 //const MAX_BROWSER = 10; // Maksimal 10 browser paralel
 
 async function relogFB(cokis, index) {
+
+    //Helper untuk waktu
+    const waktu = () => {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        return `[ ${hh}:${mm} ]`;
+    };
     // Atur posisi window ke kanan berdasarkan index
     const windowX = 320 * index;
     // Tambahkan delay berdasarkan index agar tidak membuka browser bersamaan
@@ -71,11 +79,11 @@ async function relogFB(cokis, index) {
             }, 5000); // Tunggu 5 detik sebelum upload foto sampul
         `);
         await delay(5000); // Tunggu 5 detik untuk memastikan upload selesai
-        console.log(`[${email}] : Profile and cover photos uploaded successfully.`);
+        console.log(`${waktu()}[${email}] : Profile and cover photos uploaded successfully.`);
         // await delay(7000); // Tunggu 7 detik sebelum menjalankan script lainnya
 
         // Jalankan script untuk memeriksa akun
-        console.log(`[${email}] : Proses...`);
+        console.log(`${waktu()}[${email}] : Proses...`);
         await delay(5000); // Tunggu 5 detik sebelum menjalankan script Upload
         const result = await page.evaluate(async () => {
         /* ---------- helper di dalam browser ---------- */
@@ -186,53 +194,45 @@ async function relogFB(cokis, index) {
         UNKNOWN          : 'error-akun.txt'
         };
 
-        //Helper untuk waktu
-        const waktu = () => {
-            const now = new Date();
-            const hh = String(now.getHours()).padStart(2, '0');
-            const mm = String(now.getMinutes()).padStart(2, '0');
-            return `[${hh}:${mm}]`;
-        };
-
         switch (status) {
         case 'CLONE_SUKSES':
-            console.log(`[ ${waktu()} ][${email}] ✅ Clone berhasil (ID: ${cloneId}).`);
+            console.log(`${waktu()}[${email}] ✅ Clone berhasil (ID: ${cloneId}).`);
             await saveCookies(page, FILEMAP[status], email, password, cloneId);
             await browser.close();
             break;
 
         case 'CLONE_SUDAH_ADA':
-            console.log(`[ ${waktu()} ][${email}] ℹ️  Clone sudah ada (ID: ${cloneId}).`);
+            console.log(`${waktu()}[${email}] ℹ️  Clone sudah ada (ID: ${cloneId}).`);
             await saveCookies(page, FILEMAP[status], email, password, cloneId);
             await browser.close();
             break;
 
         case 'TIDAK_BISA_CREATE':
-            console.log(`[ ${waktu()} ][${email}] ⚠️  Fitur akun ganda belum tersedia.`);
+            console.log(`${waktu()}[${email}] ⚠️  Fitur akun ganda belum tersedia.`);
             await saveCookies(page, FILEMAP[status], email, password);
             await browser.close();
             break;
 
         case 'GAGAL_CREATE':
-            console.log(`[ ${waktu()} ][${email}] ❌ Gagal membuat akun ganda.`);
+            console.log(`${waktu()}[${email}] ❌ Gagal membuat akun ganda.`);
             await saveCookies(page, FILEMAP[status], email, password);
             await browser.close();
             break;
 
         case 'ERROR_UPLOAD_FOTO':
-            console.log(`[ ${waktu()} ][${email}] ❌ Gagal upload foto profil/sampul.`);
+            console.log(`${waktu()}[${email}] ❌ Gagal upload foto profil/sampul.`);
             await saveCookies(page, FILEMAP[status], email, password);
             await browser.close();
             break;
 
         case 'ERROR_FETCH':
-            console.log(`[ ${waktu()} ][${email}] ❌ Error saat fetch GraphQL.`);
+            console.log(`${waktu()}[${email}] ❌ Error saat fetch GraphQL.`);
             await saveCookies(page, FILEMAP[status], email, password);
             await browser.close();
             break;
 
         default:
-            console.error(`[ ${waktu()} ][${email}] ❓ Status tidak dikenal: ${status}`);
+            console.error(`${waktu()}[${email}] ❓ Status tidak dikenal: ${status}`);
             await saveCookies(page, FILEMAP.UNKNOWN, email, password);
             await browser.close();
         }
