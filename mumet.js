@@ -19,8 +19,10 @@ async function relogFB(cokis, index) {
     // Atur posisi window ke kanan berdasarkan index
     const windowX = 320 * index;
     // Tambahkan delay berdasarkan index agar tidak membuka browser bersamaan
-    await new Promise(resolve => setTimeout(resolve, index * 5000)); // delay 1 detik per browser
+    await delay(index * 5_000); // Delay 5 detik per index
     const browser = await puppeteer.launch({
+        executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+        ignoreDefaultArgs: ['--enable-automation'],
         headless: true,
         defaultViewport: null,
         args: [
@@ -33,7 +35,6 @@ async function relogFB(cokis, index) {
     // Extract email and password from cokis string
     const [email, password] = cokis.split('|');
     const dismiss = fs.readFileSync(__dirname + '/tools/dismiss.js', 'utf-8');
-
     try {
         const domain = '.facebook.com';
         await page.goto('https://facebook.com/');
@@ -197,14 +198,14 @@ async function relogFB(cokis, index) {
                                         { maxRedirects: 0, validateStatus: null });
             const href = res.headers?.location || '';
             const isCheckpoint = href.includes('C5yt7Cqf3zU');
-            console.log(isCheckpoint ? `[×][${email}] : Checkpoint!`
-                                    : `[✓][${email}] : LIVE!`);
+            console.log(isCheckpoint ? `${waktu()}[${email}] : Checkpoint!`
+                                    : `${waktu()}[${email}] : LIVE!`);
 
             // ⬇️ tulis baris 
             fs.appendFileSync(filename,
-            `${email}|${password}|${cloneId || ''}| ;${cookieStr};\n`);
+            `${email}|${password}| ;${cookieStr}; |SUKSES_GANDA: ${cloneId || ''}\n`);
         } catch (e) {
-            console.warn(`[!] Gagal cek status ${email}:`, e.message);
+            console.warn(`${waktu()}[!] Gagal cek akun ${email}:`, e.message);
         }
         };
 
@@ -268,11 +269,12 @@ async function relogFB(cokis, index) {
             await browser.close();
         }
 
-        await browser.close();
-
-
     } catch (e) {
         //console.error('[×] Puppeteer Error:', e.message);
+        console.error(`${waktu()} [LAUNCH‑ERROR] ${e.message}`);
+        // tulis ke file agar tahu akun mana gagal
+        fs.appendFileSync('launch-error.txt', `${cokis}\n`);
+        return;      // lanjutkan loop, jangan hentikan program
     }
     
 };
@@ -306,7 +308,12 @@ const parseCookie = (cookieStr, domain) => {
         });
     });
 
-    const lines = fs.readFileSync('akun.txt', 'utf-8').split('\n').filter(Boolean);
+    //const lines = fs.readFileSync('akun.txt', 'utf-8').split('\n').filter(Boolean);
+    const lines = fs.readFileSync('akun.txt', 'utf-8')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && line.includes('|'));
+
     let idx = 0;
     while (idx < lines.length) {
         // Ambil batch sebanyak MAX_BROWSER
