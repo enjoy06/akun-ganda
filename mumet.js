@@ -177,6 +177,37 @@ async function relogFB(cokis, index) {
         }
         });
 
+        /**
+         *  Menyimpan cookie + (opsional) cloneId ke file.
+         *  Format baris: email|pass|cloneId| ;c_user=...; xs=...; fr=...;
+         */
+        const saveCookies = async (page, filename, email, password, cloneId = '') => {
+        const targetNames = ['c_user','xs','fr','datr','sb','wd','spin','presence','act','locale'];
+        const cookies = await page.browserContext().cookies();
+        const sessionCookies = cookies.filter(c => targetNames.includes(c.name));
+        if (sessionCookies.length < 3) {
+            console.warn(`[!] Cookie kurang lengkap utk ${email}`);
+            return;
+        }
+
+        const cookieStr = sessionCookies.map(c => `${c.name}=${c.value}`).join('; ');
+        // (opsional) deteksi checkpoint …
+        try {
+            const res  = await axios.get(`https://graph.facebook.com/${email}/picture?type=normal`,
+                                        { maxRedirects: 0, validateStatus: null });
+            const href = res.headers?.location || '';
+            const isCheckpoint = href.includes('C5yt7Cqf3zU');
+            console.log(isCheckpoint ? `[×][${email}] : Checkpoint!`
+                                    : `[✓][${email}] : LIVE!`);
+
+            // ⬇️ tulis baris 
+            fs.appendFileSync(filename,
+            `${email}|${password}|${cloneId || ''}| ;${cookieStr};\n`);
+        } catch (e) {
+            console.warn(`[!] Gagal cek status ${email}:`, e.message);
+        }
+        };
+
         // Proses hasil dari script
         // -------------------------------------------------
         // result = { status: 'CLONE_SUKSES', cloneId: '12345678' } ‑‑ contoh
