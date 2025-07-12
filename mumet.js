@@ -21,7 +21,7 @@ async function relogFB(cokis, index) {
     // Tambahkan delay berdasarkan index agar tidak membuka browser bersamaan
     await new Promise(resolve => setTimeout(resolve, index * 5000)); // delay 1 detik per browser
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         defaultViewport: null,
         args: [
             `--window-size=300,450`,
@@ -68,7 +68,7 @@ async function relogFB(cokis, index) {
 
         await delay(5000); // Tunggu 7 detik sebelum menjalankan script upload
         //Upload sampul dan profil
-        console.log(`[${email}] : Uploading profile and cover photos...`);
+        console.log(`${waktu()}[${email}] : Uploading profile and cover photos...`);
         var fotoProfil = await getImageBase64();
         var fotoSampul = await getCoverImageBase64();
         var js = fs.readFileSync('./tools/upload_foto_clone.js', 'utf-8');
