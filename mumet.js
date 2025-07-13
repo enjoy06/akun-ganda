@@ -23,7 +23,7 @@ async function relogFB(cokis, index) {
     const browser = await puppeteer.launch({
         executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
         ignoreDefaultArgs: ['--enable-automation'],
-        headless: true,
+        headless: false,
         defaultViewport: null,
         args: [
             `--window-size=300,450`,
@@ -81,7 +81,7 @@ async function relogFB(cokis, index) {
         `);
         await delay(5000); // Tunggu 5 detik untuk memastikan upload selesai
         console.log(`${waktu()}[${email}] : Profile and cover photos uploaded successfully.`);
-        // await delay(7000); // Tunggu 7 detik sebelum menjalankan script lainnya
+        await delay(7000); // Tunggu 7 detik sebelum menjalankan script lainnya
 
         // Jalankan script untuk memeriksa akun
         console.log(`${waktu()}[${email}] : Proses...`);
@@ -114,11 +114,10 @@ async function relogFB(cokis, index) {
         }
 
         const nodes      = listResp?.data?.viewer?.actor?.profile_switcher_eligible_profiles?.nodes || [];
-        const firstClone = nodes[0]?.profile_id ?? null;
+        const firstClone = nodes?.[0]?.profile.id ?? null;
         const canCreate  = listResp?.data?.viewer
                                 ?.additional_profile_creation_eligibility?.single_owner?.can_create;
-
-        if (firstClone) {
+        if (nodes.length > 0 && firstClone) {
             return { status: 'CLONE_SUDAH_ADA', cloneId: firstClone };
         }
         if (!canCreate) {
@@ -275,6 +274,13 @@ async function relogFB(cokis, index) {
         // tulis ke file agar tahu akun mana gagal
         fs.appendFileSync('launch-error.txt', `${cokis}\n`);
         return;      // lanjutkan loop, jangan hentikan program
+    } finally {
+      // tutup kalau masih terbuka
+        if (browser) {
+            try {
+            await browser.close();        // kalau sudah tertutup akan melempar → ditangkap
+            } catch (_) { /* abaikan */ }
+        }
     }
     
 };
