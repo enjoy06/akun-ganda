@@ -23,7 +23,7 @@ async function relogFB(cokis, index) {
     const browser = await puppeteer.launch({
         executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
         ignoreDefaultArgs: ['--enable-automation'],
-        headless: false,
+        headless: true,
         defaultViewport: null,
         args: [
             `--window-size=300,450`,
@@ -69,7 +69,7 @@ async function relogFB(cokis, index) {
 
         await delay(5000); // Tunggu 7 detik sebelum menjalankan script upload
         //Upload sampul dan profil
-        console.log(`${waktu()}[${email}] : Uploading profile and cover photos...`);
+        //console.log(`${waktu()}[${email}] : Uploading profile and cover photos...`);
         var fotoProfil = await getImageBase64();
         var fotoSampul = await getCoverImageBase64();
         var js = fs.readFileSync('./tools/upload_foto_clone.js', 'utf-8');
@@ -80,7 +80,7 @@ async function relogFB(cokis, index) {
             }, 5000); // Tunggu 5 detik sebelum upload foto sampul
         `);
         await delay(5000); // Tunggu 5 detik untuk memastikan upload selesai
-        console.log(`${waktu()}[${email}] : Profile and cover photos uploaded successfully.`);
+        //console.log(`${waktu()}[${email}] : Profile and cover photos uploaded successfully.`);
         await delay(7000); // Tunggu 7 detik sebelum menjalankan script lainnya
 
         // Jalankan script untuk memeriksa akun
@@ -115,10 +115,14 @@ async function relogFB(cokis, index) {
 
         const nodes      = listResp?.data?.viewer?.actor?.profile_switcher_eligible_profiles?.nodes || [];
         const firstClone = nodes?.[0]?.profile.id ?? null;
+        const isFanspage = nodes?.[0]?.profile.is_profile_plus ?? null;
         const canCreate  = listResp?.data?.viewer
                                 ?.additional_profile_creation_eligibility?.single_owner?.can_create;
-        if (nodes.length > 0 && firstClone) {
+        if (nodes.length > 0 && firstClone && !isFanspage) {
             return { status: 'CLONE_SUDAH_ADA', cloneId: firstClone };
+        }
+        if (nodes.length > 0 && firstClone && isFanspage) {
+            return { status: 'CLONE_FANSPAGE', cloneId: firstClone };
         }
         if (!canCreate) {
             return { status: 'TIDAK_BISA_CREATE', cloneId: null };
@@ -218,6 +222,7 @@ async function relogFB(cokis, index) {
         const FILEMAP = {
         CLONE_SUKSES     : 'sukses-ganda.txt',   // clone berhasil dibuat
         CLONE_SUDAH_ADA  : 'wesono-ganda.txt',   // clone memang sudah ada
+        CLONE_FANSPAGE   : 'fanspage-ganda.txt', // akun clone adalah fanspage
         TIDAK_BISA_CREATE: 'durong-ganda.txt',   // fitur belum tersedia
         GAGAL_CREATE     : 'gagal-ganda.txt',    // mutation gagal
         ERROR_UPLOAD_FOTO: 'error-foto-akun.txt',     // gagal upload profil/sampul
@@ -233,13 +238,19 @@ async function relogFB(cokis, index) {
             break;
 
         case 'CLONE_SUDAH_ADA':
-            console.log(`${waktu()}[${email}] ℹ️  Clone sudah ada (ID: ${cloneId}).`);
+            console.log(`${waktu()}[${email}] ℹ️ Clone sudah ada (ID: ${cloneId}).`);
+            await saveCookies(page, FILEMAP[status], email, password, cloneId);
+            await browser.close();
+            break;
+
+        case 'CLONE_FANSPAGE':
+            console.log(`${waktu()}[${email}] ℹ️ Clone adalah fanspage (ID: ${cloneId}).`);
             await saveCookies(page, FILEMAP[status], email, password, cloneId);
             await browser.close();
             break;
 
         case 'TIDAK_BISA_CREATE':
-            console.log(`${waktu()}[${email}] ⚠️  Fitur akun ganda belum tersedia.`);
+            console.log(`${waktu()}[${email}] ⚠️ Fitur akun ganda belum tersedia.`);
             await saveCookies(page, FILEMAP[status], email, password);
             await browser.close();
             break;
